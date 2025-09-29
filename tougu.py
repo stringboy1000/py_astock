@@ -51,8 +51,9 @@ if __name__ == '__main__':
     XtAsset = xt_trader.query_stock_asset(acc)
     # print(XtAsset)
     # sys.exit()
-    xtTradeService = xtTradeService()
-    result = xtTradeService.syncAccount(XtAsset)
+    xtTS = xtTradeService()
+    result = xtTS.syncAccount(XtAsset)
+    # print(result)
     # sys.exit()
 
     # for attr in dir(account_info):
@@ -63,26 +64,27 @@ if __name__ == '__main__':
     #sys.exit()
 
     #取可用资金
-    available_cash = XtAsset.m_dCash
-
-    print(acc.account_id, '可用资金', available_cash)
+    # available_cash = XtAsset.m_dCash
+    print(acc.account_id, '可用资金', XtAsset.m_dCash)
     #查账号持仓
     positions = xt_trader.query_stock_positions(acc)
     print(type(positions) )
     for position in positions:
-        print(type(position))
-        print(position.stock_code)
-        print(position.volume)
-    trades = xt_trader.query_stock_trades(acc)
-    print(type(trades))
-    print(len(trades))
-    attrs = ['account_id','stock_code','traded_id','traded_time','traded_price','traded_volume','traded_amount','order_id']
-    for trade in trades:
-        print(type(trade))
-        # print(dir(trade))
-        for attr in attrs:
-            if hasattr(trade, attr):
-                print(getattr(trade, attr))
+        # print(type(position))
+        xtTS.publicPosition(position)
+        # print(position.stock_code)
+        # print(position.volume)
+
+    # trades = xt_trader.query_stock_trades(acc)
+    # print(type(trades))
+    # print(len(trades))
+    # attrs = ['account_id','stock_code','traded_id','traded_time','traded_price','traded_volume','traded_amount','order_id']
+    # for trade in trades:
+    #     print(type(trade))
+    #     # print(dir(trade))
+    #     for attr in attrs:
+    #         if hasattr(trade, attr):
+    #             print(getattr(trade, attr))
 
         # print(trade.traded_time)
         # print( time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(trade.traded_time) ) )
@@ -95,3 +97,5 @@ if __name__ == '__main__':
     orders = xt_trader.query_stock_orders(acc, cancelable_only=False)
     for order in orders:
         print(type(order))
+        result = xtTS.publicOrder(order)
+        print(result)
