@@ -53,7 +53,7 @@ if __name__ == '__main__':
     # sys.exit()
     xtTradeService = xtTradeService()
     result = xtTradeService.syncAccount(XtAsset)
-    sys.exit()
+    # sys.exit()
 
     # for attr in dir(account_info):
     #     print(attr)

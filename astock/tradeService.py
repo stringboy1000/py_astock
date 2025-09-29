@@ -15,6 +15,7 @@ class tradeService:
         data["token"] = self.token
         data["account_id"] = self.account_id
         return data
+
     def syncAccount(self, data):
         url = self.astock_online_api + "trade/follow/syncAccount"
         # print(url)
@@ -31,6 +32,12 @@ class tradeService:
 
     def publicTrade(self, data):
         url = self.astock_online_api + "trade/follow/publicTrade"
+        data = self.genRealData(data)
+        r = requests.request('POST', url, data=data)
+        return r.text
+
+    def publicPosition(self, data):
+        url = self.astock_online_api + "trade/follow/publicPosition"
         data = self.genRealData(data)
         r = requests.request('POST', url, data=data)
         return r.text
