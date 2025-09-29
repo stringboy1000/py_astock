@@ -25,19 +25,19 @@ class tradeService:
         return r.text
 
     def publicOrder(self, data):
-        url = self.astock_online_api + "trade/follow/publicOrder"
+        url = self.astock_online_api + "trade/follow/publishOrder"
         data = self.genRealData(data)
         r = requests.request('POST', url, data=data)
         return r.text
 
     def publicTrade(self, data):
-        url = self.astock_online_api + "trade/follow/publicTrade"
+        url = self.astock_online_api + "trade/follow/publishTrade"
         data = self.genRealData(data)
         r = requests.request('POST', url, data=data)
         return r.text
 
     def publicPosition(self, data):
-        url = self.astock_online_api + "trade/follow/publicPosition"
+        url = self.astock_online_api + "trade/follow/publishPosition"
         data = self.genRealData(data)
         r = requests.request('POST', url, data=data)
         return r.text

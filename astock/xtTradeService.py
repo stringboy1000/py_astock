@@ -39,6 +39,8 @@ class xtTradeService:
         for field in self.xtOrderField:
             if hasattr(XtOrder, field):
                 data[field] = getattr(XtOrder, field)
+        print(data)
+
         # data = {
         #     "account_id":XtOrder.account_id, #账号
         #     "stock_code": XtOrder.stock_code, #证券代码，例如"600000.SH"
@@ -75,6 +77,7 @@ class xtTradeService:
         for field in self.xtTradeField:
             if hasattr(XtTrade, field):
                 data[field] = getattr(XtTrade, field)
+        # print(data)
         ts = tradeService()
         return ts.publicTrade(data)
 

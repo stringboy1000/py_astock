@@ -69,9 +69,9 @@ if __name__ == '__main__':
     #查账号持仓
     positions = xt_trader.query_stock_positions(acc)
     print(type(positions) )
-    for position in positions:
+    # for position in positions:
         # print(type(position))
-        xtTS.publicPosition(position)
+        # xtTS.publicPosition(position)
         # print(position.stock_code)
         # print(position.volume)
 
@@ -95,6 +95,8 @@ if __name__ == '__main__':
     # print(acc.account_id, '可用持仓字典', position_available_dict)
     #查询当日委托单
     orders = xt_trader.query_stock_orders(acc, cancelable_only=False)
+    print(orders)
+    # sys.exit()
     for order in orders:
         print(type(order))
         result = xtTS.publicOrder(order)
