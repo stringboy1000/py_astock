@@ -1,23 +1,22 @@
-from astock.tradeService import tradeService
-class xtTradeService:
-    xtAssetField = [
-        "account_id", "total_asset", "cash", "frozen_cash", "market_value"
-    ]
+from astock.TradeService import TradeService
+from astock.XtQuantService import XtQuantService
+class XtTradeService(XtQuantService):
 
-    xtOrderField = [
-        "account_id", "stock_code", "order_id", "order_sysid", "order_time",
-                    "order_type", "order_volume", "price_type", "price", "traded_volume", "order_status", "status_msg", "order_remark"
-    ]
+    def query_and_publish_order(self):
+        orders = self.xt_trader.query_stock_orders(self.acc, cancelable_only=False)
+        # print(orders)
+        # sys.exit()
+        for order in orders:
+            # print(type(order))
+            result = self.publish_order(order)
+            print(result)
 
-    xtTradeField = [
-        "account_id", "stock_code", "order_type", "traded_id", "traded_time", "traded_price", "traded_volume",
-        "traded_amount", "order_id", "order_sysid", "strategy_name", "order_remark"
-    ]
+    # 获取资金账户
+    def sync_account_by_self(self):
+        XtAsset = self.get_xt_asset()
+        return self.sync_account(XtAsset)
 
-    xtPositionField = [
-        "account_id", "stock_code", "volume", "can_use_volume", "open_price", "market_value", "frozen_volume", "yesterday_volume", "avg_price"
-    ]
-    def syncAccount(self, XtAsset):
+    def sync_account(self, XtAsset):
         # data = {
         #     "account_id":XtAsset.account_id, #资金账号
         #     "total_asset": XtAsset.total_asset,  # 总资金
@@ -25,21 +24,22 @@ class xtTradeService:
         #     "frozen_cash": XtAsset.frozen_cash,#冻结金额
         #     "market_value": XtAsset.market_value,  # 持仓市值
         # }
-        data = {}
-        for field in self.xtAssetField:
-            if hasattr(XtAsset, field):
-                data[field] = getattr(XtAsset, field)
+        # data = {}
+        # for field in self.xtAssetField:
+        #     if hasattr(XtAsset, field):
+        #         data[field] = getattr(XtAsset, field)
         #print(data)
-        ts = tradeService()
-        return ts.syncAccount(data)
+        data = self.xt_asset_2_data(XtAsset)
+        ts = TradeService()
+        return ts.sync_account(data)
 
-    def publicOrder(self, XtOrder):
+    def publish_order(self, XtOrder):
         # 处理迅捷数据为可上传数据
-        data = {}
-        for field in self.xtOrderField:
-            if hasattr(XtOrder, field):
-                data[field] = getattr(XtOrder, field)
-        print(data)
+        # data = {}
+        # for field in self.xtOrderField:
+        #     if hasattr(XtOrder, field):
+        #         data[field] = getattr(XtOrder, field)
+        # print(data)
 
         # data = {
         #     "account_id":XtOrder.account_id, #账号
@@ -56,10 +56,11 @@ class xtTradeService:
         #     "status_msg": XtOrder.status_msg,
         #     "order_remark": XtOrder.order_remark, #委托备注，最大 24 个英文字符
         # }
-        ts = tradeService()
-        return ts.publicOrder(data)
+        data = self.xt_order_2_data(XtOrder)
+        ts = TradeService()
+        return ts.publish_order(data)
 
-    def publicTrade(self, XtTrade):
+    def publish_trade(self, XtTrade):
         # data = {
         #     "account_id": XtTrade.account_id, #资金账号
         #     "stock_code": XtTrade.stock_code, #证券代码
@@ -78,10 +79,10 @@ class xtTradeService:
             if hasattr(XtTrade, field):
                 data[field] = getattr(XtTrade, field)
         # print(data)
-        ts = tradeService()
-        return ts.publicTrade(data)
+        ts = TradeService()
+        return ts.publish_trade(data)
 
-    def publicPosition(self, XtPosition):
+    def publish_position(self, XtPosition):
         data = {}
         for field in self.xtPositionField:
             if hasattr(XtPosition, field):

@@ -1,13 +1,14 @@
 # coding:utf-8
-import time, datetime, traceback, sys,requests,json
+import time, datetime, traceback, sys,requests
 from xtquant import xtdata
 from xtquant.xttrader import XtQuantTrader, XtQuantTraderCallback
 from xtquant.xttype import StockAccount
 from xtquant import xtconstant
 from userQuant.userQuantTrader import MyXtQuantTraderCallback
 from config.config import Config
+from astock.CsTradeService import CsTradeService
+from astock.DecisionOrderService import DecisionOrderService
 from astock.XtTradeService import XtTradeService
-
 
 # 定义一个类 创建类的实例 作为状态的容器
 class _a():
@@ -20,15 +21,15 @@ A.bought_list = []
 
 if __name__ == '__main__':
     print("----------------------- k线棱镜 start -----------------------")
-    #读取配置
+    # 读取配置
     mc_config = Config()
 
     # 指定客户端所在路径, 券商端指定到 userdata_mini文件夹
     # 注意：如果是连接投研端进行交易，文件目录需要指定到f"{安装目录}\userdata"
-    #path = r'D:\迅投极速策略交易系统交易终端 华鑫证券QMT模拟\userdata_mini'
+    # path = r'D:\迅投极速策略交易系统交易终端 华鑫证券QMT模拟\userdata_mini'
     path = mc_config.account['xtquant_path']
     print(mc_config.__dict__)
-    # sys.exit()
+
     # 生成session id 整数类型 同时运行的策略不能重复
     session_id = int(time.time())
     xt_trader = XtQuantTrader(path, session_id)
@@ -49,22 +50,42 @@ if __name__ == '__main__':
     # 对交易回调进行订阅，订阅后可以收到交易主推，返回0表示订阅成功
     subscribe_result = xt_trader.subscribe(acc)
     print('对交易回调进行订阅，订阅后可以收到交易主推，返回0表示订阅成功', subscribe_result)
-    print(acc.__dict__)
     #取账号信息
-    XtAsset = xt_trader.query_stock_asset(acc)
-    print(XtAsset)
+    # XtAsset = xt_trader.query_stock_asset(acc)
+    # print(XtAsset)
     # sys.exit()
-    # 投顾交易服务类，同步资金账户、持仓账户、委托下单等
     xtTS = XtTradeService(xt_trader, acc)
-    data = xtTS.xt_asset_2_data(XtAsset)
-    print(data)
-    # sys.exit()
-    result = xtTS.sync_account(XtAsset)
-    print(result)
+    # 获取资金账户，判断资金账户是否有值
+    if not xtTS.check_asset_data():
+        print('资金账户存在问题,请确认后重新打开,软件将于10秒后关闭')
+        i = 10
+        while i > 0:
+            print(i)
+            i = i - 1
+            time.sleep(1)
+        sys.exit()
+    # 资金账户判断结束
+    print('资金账户同步中...')
+    result = xtTS.sync_account_by_self()
+    print('资金账户已同步')
+    print('----------------------------------------------------------')
+    print('策略执行开始')
+
+    #决策对象
+    DCOS = DecisionOrderService(xt_trader, acc)
+    CSTS = CsTradeService(DCOS)
+
+
+    #循环获取数据
+    CSTS.subscribe_order()
+    # print(result)
     while True:
         print('测试')
         time.sleep(1)
         continue
+    sys.exit()
+
+    # print(result)
     # sys.exit()
 
     # for attr in dir(account_info):
@@ -76,13 +97,13 @@ if __name__ == '__main__':
 
     #取可用资金
     # available_cash = XtAsset.m_dCash
-    # print(acc.account_id, '可用资金', XtAsset.m_dCash)
+    print(acc.account_id, '可用资金', XtAsset.m_dCash)
     #查账号持仓
-    # positions = xt_trader.query_stock_positions(acc)
-    # print(type(positions) )
+    positions = xt_trader.query_stock_positions(acc)
+    print(type(positions) )
     # for position in positions:
         # print(type(position))
-        # xtTS.publishPosition(position)
+        # xtTS.publicPosition(position)
         # print(position.stock_code)
         # print(position.volume)
 
@@ -104,39 +125,11 @@ if __name__ == '__main__':
     # position_available_dict = {i.stock_code : i.m_nCanUseVolume for i in positions}
     # print(acc.account_id, '持仓字典', position_total_dict)
     # print(acc.account_id, '可用持仓字典', position_available_dict)
-    now_time = datetime.datetime.now().time() #当前时间 08:55:58.102178
-    stock_start_time = datetime.time(9, 25, 0)
-    stock_end_time = datetime.time(14, 57, 0)
-    while True:
-        now_time = datetime.datetime.now().time()
-        if now_time.__lt__(stock_start_time):
-            time.sleep(60)
-            continue
-        elif now_time.__gt__(stock_start_time) and now_time.__lt__(stock_end_time):
-            #盘中，调用接口，并且执行
-            # 查询当日委托单
-            result = xtTS.query_and_publish_order()
-            print(result)
-            time.sleep(0.5)
-            continue
-        else:
-            print('当天已收盘,系统先休息1小时')
-            time.sleep(3600)
-            break
-
-    # 盘后清理工作
-
-    # 盘后清理工作结束
-    print('退出')
-
-
     #查询当日委托单
-    # result = xtTS.query_and_publish_order()
-    # print(result)
-    # orders = xt_trader.query_stock_orders(acc, cancelable_only=False)
-    # print(orders)
-    # # sys.exit()
-    # for order in orders:
-    #     print(type(order))
-    #     result = xtTS.publish_order(order)
-    #     print(result)
+    orders = xt_trader.query_stock_orders(acc, cancelable_only=False)
+    print(orders)
+    # sys.exit()
+    for order in orders:
+        print(type(order))
+        result = xtTS.publicOrder(order)
+        print(result)
