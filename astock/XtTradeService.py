@@ -1,7 +1,8 @@
 from astock.TradeService import TradeService
 from astock.XtQuantService import XtQuantService
+from xtquant import xtconstant
 class XtTradeService(XtQuantService):
-
+    # 查询迅捷委托单，并将委托单一一上传到服务器
     def query_and_publish_order(self):
         orders = self.xt_trader.query_stock_orders(self.acc, cancelable_only=False)
         # print(orders)
@@ -12,7 +13,7 @@ class XtTradeService(XtQuantService):
             print(result)
 
     # 获取资金账户
-    def sync_account_by_self(self):
+    def query_and_publish_account(self):
         XtAsset = self.get_xt_asset()
         return self.sync_account(XtAsset)
 
@@ -57,6 +58,19 @@ class XtTradeService(XtQuantService):
         #     "order_remark": XtOrder.order_remark, #委托备注，最大 24 个英文字符
         # }
         data = self.xt_order_2_data(XtOrder)
+        # 如果是废单、撤销单，则不上传
+        if data['order_status'] in [xtconstant.ORDER_CANCELED,xtconstant.ORDER_REPORTED_CANCEL, xtconstant.ORDER_JUNK]:
+            return False
+        # 先判断是买单还是卖单，如果是卖单，则要把账号持仓调出来
+        if data['order_type'] == xtconstant.STOCK_SELL:
+            # print(data['stock_code'])
+            #处理逻辑,持仓
+            now_position = self.get_position_by_stock_code(data['stock_code'])
+            # print(now_position)
+            if now_position is None:
+                return False
+            data['volume'] = now_position['volume']
+
         ts = TradeService()
         return ts.publish_order(data)
 
@@ -88,3 +102,25 @@ class XtTradeService(XtQuantService):
             if hasattr(XtPosition, field):
                 data[field] = getattr(XtPosition, field)
         print(data)
+
+    # 查询迅捷持仓，并将持仓打包上传到服务器
+    def query_and_publish_positions(self):
+        positions = self.xt_trader.query_stock_positions(self.acc)
+        return self.publish_positions(positions)
+
+    # 发布持仓
+    def publish_positions(self, positions):
+        new_positions = {}
+        print('<<<aaaa>>>')
+        new_positions = {"600201.sh": {"stock_code": "600201.sh", "volume": 1000},"002222.sz": {"stock_code": "002222.sz", "volume": 100}}
+        # if not positions:
+        #     return new_positions
+        # for XtPosition in positions:
+        #     position = self.xt_position_2_data(XtPosition)
+        #     stock_code = position['stock_code']
+        #     new_positions[stock_code] = position
+
+        ts = TradeService()
+        return ts.publish_positions( {'positions': new_positions} )
+
+

@@ -1,5 +1,8 @@
 import sys
 
+from PyInstaller.building.splash_templates import position_window
+from xtquant.xttype import XtPosition
+
 from astock.BaseService import BaseService
 class XtQuantService(BaseService):
     xtAssetField = [
@@ -47,14 +50,32 @@ class XtQuantService(BaseService):
                 data[field] = getattr(XtOrder, field)
         return data
 
+    # 将迅捷的资金账户对象转为字典类型数据
+    def xt_position_2_data(self, XtPosition):
+        data = {}
+        for field in self.xtPositionField:
+            if hasattr(XtPosition, field):
+                data[field] = getattr(XtPosition, field)
+        return data
+
     # 获取资金账号的对象数据
     def get_xt_asset(self):
         XtAsset = self.xt_trader.query_stock_asset(self.acc)
         return XtAsset
 
+    # 获取委托单列表
+    def get_xt_order(self):
+        XtOrder = self.xt_trader.query_stock_order(self.acc)
+        return XtOrder
+
+    # 判断资金账号是否正确获取
     def check_asset_data(self):
         XtAsset = self.xt_trader.query_stock_asset(self.acc)
         # print(XtAsset)
+        return self.check_asset_data_by_asset(XtAsset)
+
+    # 实际判断资金账户
+    def check_asset_data_by_asset(self, XtAsset):
         a = 0
         for field in self.xtAssetField:
             if not hasattr(XtAsset, field):
@@ -65,3 +86,35 @@ class XtQuantService(BaseService):
 
         return True
 
+    # 获取仓位列表
+    def get_xt_positions(self):
+        positions = self.xt_trader.query_stock_positions(self.acc)
+        return positions
+
+    # 获取仓位列表，返回字典类型列表
+    def get_positions(self):
+        positions = self.get_xt_positions()
+        now_positions = []
+        for XtPosition in positions:
+            position = self.xt_position_2_data(XtPosition)
+            now_positions.append(position)
+        return now_positions
+
+    # 根据stock code获取仓位
+    def get_position_by_stock_code(self, stock_code):
+        positions = self.get_xt_positions()
+        now_position = None
+        for XtPosition in positions:
+            position = self.xt_position_2_data(XtPosition)
+            # print(position)
+            # print(stock_code)
+            if position['stock_code'] != stock_code:
+                continue
+            else:
+                # print('---------')
+                # print(position)
+                now_position = position
+        if now_position is None:
+            return None
+        else:
+            return now_position

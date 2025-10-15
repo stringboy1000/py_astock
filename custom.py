@@ -5,11 +5,12 @@ from xtquant.xttrader import XtQuantTrader, XtQuantTraderCallback
 from xtquant.xttype import StockAccount
 from xtquant import xtconstant
 from userQuant.userQuantTrader import MyXtQuantTraderCallback
-from config.config import Config
+from config.Config import Config
 from astock.CsTradeService import CsTradeService
 from astock.DecisionOrderService import DecisionOrderService
 from astock.XtTradeService import XtTradeService
-
+from astock.TradeService import TradeService
+from Common.Function import Function
 # 定义一个类 创建类的实例 作为状态的容器
 class _a():
     pass
@@ -23,6 +24,13 @@ if __name__ == '__main__':
     print("----------------------- k线棱镜 start -----------------------")
     # 读取配置
     mc_config = Config()
+    common_function = Function()
+
+    # 判断配置是否被正确加载
+    if not mc_config.check_config():
+        print("配置文件不存在或错误")
+        common_function.count_down_exit(10)
+
 
     # 指定客户端所在路径, 券商端指定到 userdata_mini文件夹
     # 注意：如果是连接投研端进行交易，文件目录需要指定到f"{安装目录}\userdata"
@@ -51,39 +59,39 @@ if __name__ == '__main__':
     subscribe_result = xt_trader.subscribe(acc)
     print('对交易回调进行订阅，订阅后可以收到交易主推，返回0表示订阅成功', subscribe_result)
     #取账号信息
-    # XtAsset = xt_trader.query_stock_asset(acc)
+    XtAsset = xt_trader.query_stock_asset(acc)
     # print(XtAsset)
     # sys.exit()
-    xtTS = XtTradeService(xt_trader, acc)
+    # xtTS = XtTradeService(xt_trader, acc)
+    DCOS = DecisionOrderService(xt_trader, acc)
     # 获取资金账户，判断资金账户是否有值
-    if not xtTS.check_asset_data():
-        print('资金账户存在问题,请确认后重新打开,软件将于10秒后关闭')
-        i = 10
-        while i > 0:
-            print(i)
-            i = i - 1
-            time.sleep(1)
-        sys.exit()
+    if not DCOS.check_asset_data_by_asset(XtAsset):
+        print('资金账户存在问题,请确认后重新打开')
+        common_function.count_down_exit(10)
+
     # 资金账户判断结束
     print('资金账户同步中...')
-    result = xtTS.sync_account_by_self()
+    xt_asset_data = DCOS.xt_asset_2_data(XtAsset)
+    ts = TradeService()
+    result = ts.sync_account_follower(xt_asset_data)
+    print(result)
     print('资金账户已同步')
     print('----------------------------------------------------------')
     print('策略执行开始')
 
     #决策对象
-    DCOS = DecisionOrderService(xt_trader, acc)
+
     CSTS = CsTradeService(DCOS)
 
 
     #循环获取数据
-    CSTS.subscribe_order()
+    # CSTS.subscribe_order()
     # print(result)
-    while True:
-        print('测试')
-        time.sleep(1)
-        continue
-    sys.exit()
+    # while True:
+    #     print('测试')
+    #     time.sleep(1)
+    #     continue
+    # sys.exit()
 
     # print(result)
     # sys.exit()
@@ -95,41 +103,21 @@ if __name__ == '__main__':
 
     #sys.exit()
 
-    #取可用资金
-    # available_cash = XtAsset.m_dCash
-    print(acc.account_id, '可用资金', XtAsset.m_dCash)
-    #查账号持仓
-    positions = xt_trader.query_stock_positions(acc)
-    print(type(positions) )
-    # for position in positions:
-        # print(type(position))
-        # xtTS.publicPosition(position)
-        # print(position.stock_code)
-        # print(position.volume)
-
-    # trades = xt_trader.query_stock_trades(acc)
-    # print(type(trades))
-    # print(len(trades))
-    # attrs = ['account_id','stock_code','traded_id','traded_time','traded_price','traded_volume','traded_amount','order_id']
-    # for trade in trades:
-    #     print(type(trade))
-    #     # print(dir(trade))
-    #     for attr in attrs:
-    #         if hasattr(trade, attr):
-    #             print(getattr(trade, attr))
-
-        # print(trade.traded_time)
-        # print( time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(trade.traded_time) ) )
-        #取各品种 总持仓 可用持仓
-    # position_total_dict = {i.stock_code : i.m_nVolume for i in positions}
-    # position_available_dict = {i.stock_code : i.m_nCanUseVolume for i in positions}
-    # print(acc.account_id, '持仓字典', position_total_dict)
-    # print(acc.account_id, '可用持仓字典', position_available_dict)
-    #查询当日委托单
-    orders = xt_trader.query_stock_orders(acc, cancelable_only=False)
-    print(orders)
-    # sys.exit()
-    for order in orders:
-        print(type(order))
-        result = xtTS.publicOrder(order)
-        print(result)
+    now_time = datetime.datetime.now().time() #当前时间 08:55:58.102178
+    stock_start_time = datetime.time(9, 25, 0)
+    stock_end_time = datetime.time(14, 57, 0)
+    while True:
+        now_time = datetime.datetime.now().time()
+        if now_time.__lt__(stock_start_time):
+            time.sleep(60)
+            continue
+        elif now_time.__gt__(stock_start_time) and now_time.__lt__(stock_end_time):
+            #盘中，调用接口，并且执行
+            # 查询当日委托单
+            CSTS.subscribe_order()
+            time.sleep(0.5)
+            continue
+        else:
+            print('当天已收盘,系统先休息1小时')
+            time.sleep(3600)
+            break

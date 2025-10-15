@@ -1,5 +1,5 @@
-import json,time,datetime
-from config import config
+import json,time,datetime,os,sys
+from config import Config
 from astock.BaseService import BaseService
 class LogService(BaseService):
     base_path = ''
@@ -16,6 +16,9 @@ class LogService(BaseService):
             return False
 
     def save_log_json(self, filename, data):
+        # 新建文件夹
+        file_path = os.path.dirname(filename)
+        os.makedirs(file_path, exist_ok=True)
         with open(filename, 'w+') as f:
             #读取内容
             json.dump(data, f)

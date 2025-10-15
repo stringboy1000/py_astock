@@ -1,5 +1,7 @@
+import sys
+
 import requests
-from config import config
+from config import Config
 from astock.BaseService import BaseService
 class TradeService(BaseService):
     # Config = None
@@ -29,7 +31,12 @@ class TradeService(BaseService):
     def publish_order(self, data):
         url = self.astock_online_api + "trade/follow/publishOrder"
         data = self.gen_real_data(data)
+        # print('-------')
+        # print(data)
+        # print('-------')
+        # r = requests.request('POST', url, data=data)
         r = requests.request('POST', url, data=data)
+        # print(r.text)
         return self.json_loads(r.text)
 
     def publish_trade(self, data):
@@ -38,10 +45,21 @@ class TradeService(BaseService):
         r = requests.request('POST', url, data=data)
         return self.json_loads(r.text)
 
+    # 发布用户持仓,某个仓位的持仓
     def publish_position(self, data):
         url = self.astock_online_api + "trade/follow/publishPosition"
         data = self.gen_real_data(data)
         r = requests.request('POST', url, data=data)
+        return self.json_loads(r.text)
+
+    # 发布用户持仓,账户所有仓位的持仓
+    def publish_positions(self, data):
+        url = self.astock_online_api + "trade/follow/publishPositions"
+        data = self.gen_real_data(data)
+        print(data)
+        r = requests.request('POST', url, data=data)
+        print(r.text)
+        sys.exit()
         return self.json_loads(r.text)
 
     def subscribe_order(self, data):
@@ -50,4 +68,12 @@ class TradeService(BaseService):
         # print(data)
         r = requests.request('POST', url, data=data)
         print(r.text)
+        return self.json_loads(r.text)
+
+    def sync_account_follower(self, data):
+        url = self.astock_online_api + "trade/follow/syncAccountFollower"
+        # print(url)
+        data = self.gen_real_data(data)
+        r = requests.request('POST', url, data=data)
+        # print(r.text)
         return self.json_loads(r.text)

@@ -12,6 +12,7 @@ class DecisionLogService(LogService):
     def check_has_decision_order(self, decision_order):
         order_id = decision_order['order_id']
         filename = self.get_filename(order_id)
+        print(filename)
         return self.file_exists(filename)
 
     def do_decision_order(self, decision_order):

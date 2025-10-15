@@ -1,13 +1,14 @@
 import json,sys
-from config import config
+from config import Config
 
 class BaseService:
     Config = None
 
     def __init__(self):
-        self.Config = config.Config()
+        self.Config = Config.Config()
 
     def json_loads(self, json_str):
+        print(type(json_str))
         return json.loads(json_str)
 
     def is_success(self, result):

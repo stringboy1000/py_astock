@@ -14,13 +14,27 @@ class DecisionOrderService(XtQuantService):
     # STOCK_BUY = 23
     # STOCK_SELL = 24
 
+    def fix_data_decision_order(self, decision_order):
+        decision_order['order_type'] = int(decision_order['order_type'])
+        decision_order['price'] = float(decision_order['price'])
+        decision_order['order_market'] = float(decision_order['order_market'])
+
+        return decision_order
+
 
     # 操作决策单，一个决策单被拆分为买决策、卖决策
     def op_decision_order(self, decision_order):
         # print(xtconstant.STOCK_BUY)
         # print(xtconstant.STOCK_SELL)
-        decision_order['order_type'] = int(decision_order['order_type'])
+        # decision_order['order_type'] = int(decision_order['order_type'])
         # print(type(decision_order['order_type']) )
+        # print('------------')
+        # print(decision_order)
+        decision_order = self.fix_data_decision_order(decision_order)
+        # print(decision_order)
+        # print(type(decision_order['order_market']))
+        # print(type(decision_order['price']))
+        # sys.exit(0)
 
         if decision_order['order_type'] == xtconstant.STOCK_BUY:
             return self.op_decision_order_buy(decision_order)
@@ -125,11 +139,15 @@ class DecisionOrderService(XtQuantService):
         # 判断是否已经执行过该策略
         dls = DecisionLogService()
         if dls.check_has_decision_order(decision_order):
+            print('已经执行该卖出决策' + decision_order['stock_code'])
             return decision_order
         # 判断执行结束
 
         #获取账户仓位
         custom_decision_order = self.get_custom_decision_order_sell(decision_order)
+        if custom_decision_order['order_volume'] < 100:
+            dls.do_decision_order(decision_order)
+            return decision_order
         stock_code = custom_decision_order['stock_code']
         order_volume = custom_decision_order['order_volume']
         price = custom_decision_order['price']
@@ -138,8 +156,9 @@ class DecisionOrderService(XtQuantService):
                                                      'follow_sell', '卖出')
 
         # 写入log
-        decision_order['async_seq'] = async_seq
-        dls.do_decision_order(decision_order)
+        if async_seq > 0:
+            decision_order['async_seq'] = async_seq
+            dls.do_decision_order(decision_order)
         # 写入log结束
 
     def get_custom_decision_order_sell(self, decision_order):
@@ -148,31 +167,43 @@ class DecisionOrderService(XtQuantService):
             'order_volume': 0,
             'price': 0,
         }
+        # print(decision_order)
+        # sys.exit()
         now_position = None
-        positions = self.xt_trader.query_stock_position(self.acc)
-        for position in positions:
-            if position.stock_code != decision_order['stock_code']:
+        positions = self.xt_trader.query_stock_positions(self.acc)
+        # print(positions)
+        # sys.exit()
+        for XtPosition in positions:
+            position = self.xt_position_2_data(XtPosition)
+            # print('------------')
+            # print(position)
+            # sys.exit()
+            if position['stock_code'] != decision_order['stock_code']:
                 continue
             else:
                 now_position = position
 
         if now_position is None:
-            return decision_order
-
-
-
-        custom_decision_order['stock_code'] = now_position.stock_code
+            return custom_decision_order #客户没持仓
+        # print(now_position)
+        # sys.exit()
+        custom_decision_order['stock_code'] = now_position['stock_code']
         custom_decision_order['price'] = decision_order['price']
+        # print(type(decision_order['price']))
+        # sys.exit()
         #如果有仓位，则确定需要卖出的股票数
         if decision_order['order_market'] == 100:
-            custom_decision_order['order_volume'] = now_position.order_volume
+            custom_decision_order['order_volume'] = now_position['volume']
         else:
-            order_volume = now_position.order_volume * decision_order['order_market'] / 100
+            order_volume = now_position['volume'] * decision_order['order_market'] / 100
             order_volume = 100 * (order_volume // 100)
             if order_volume < 100:
                 order_volume = 100
             custom_decision_order['order_volume'] = order_volume
-
+        if custom_decision_order['order_volume'] >  now_position['can_use_volume']:
+            custom_decision_order['order_volume'] = now_position['can_use_volume']
+        # print(custom_decision_order)
+        # sys.exit()
         return custom_decision_order
 
 
