@@ -1,3 +1,4 @@
+import json
 from astock.TradeService import TradeService
 from astock.XtQuantService import XtQuantService
 from xtquant import xtconstant
@@ -106,21 +107,26 @@ class XtTradeService(XtQuantService):
     # 查询迅捷持仓，并将持仓打包上传到服务器
     def query_and_publish_positions(self):
         positions = self.xt_trader.query_stock_positions(self.acc)
+        # print(positions)
         return self.publish_positions(positions)
 
     # 发布持仓
     def publish_positions(self, positions):
         new_positions = {}
-        print('<<<aaaa>>>')
-        new_positions = {"600201.sh": {"stock_code": "600201.sh", "volume": 1000},"002222.sz": {"stock_code": "002222.sz", "volume": 100}}
-        # if not positions:
-        #     return new_positions
-        # for XtPosition in positions:
-        #     position = self.xt_position_2_data(XtPosition)
-        #     stock_code = position['stock_code']
-        #     new_positions[stock_code] = position
+        # print('<<<aaaa>>>')
+        # new_positions = {"600201.sh": {"stock_code": "600201.sh", "volume": 1000},"002222.sz": {"stock_code": "002222.sz", "volume": 100}}
+        # new_positions = json.dumps(new_positions)
+        if not positions:
+            return new_positions
+        for XtPosition in positions:
+            position = self.xt_position_2_data(XtPosition)
+            stock_code = position['stock_code']
+            new_positions[stock_code] = position
 
         ts = TradeService()
-        return ts.publish_positions( {'positions': new_positions} )
+        # print({'positions': new_positions })
+        data = {'positions': json.dumps(new_positions) }
+
+        return ts.publish_positions( data )
 
 
